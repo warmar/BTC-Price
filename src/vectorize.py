@@ -20,12 +20,8 @@ for i, post in reversed(list(enumerate(post_list))):
 vectorized_training_data = vectorizer.fit_transform(post_list)
 vocab = vectorizer.get_feature_names()
 
-training_data_csv = open('training_data.csv', 'w+')
-training_data_csv.write('vector,label\n')
-
 print(vectorized_training_data.shape[0])
 
 for i, datum in enumerate(vectorized_training_data):
-    training_data_csv.write('%s,%s\n' % (list(datum.toarray()[0]), label_list[i]))
+    print(dir(datum))
 
-training_data_csv.close()

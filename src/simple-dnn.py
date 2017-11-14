@@ -1,9 +1,11 @@
 import tensorflow as tf
 import random
 from pprint import pprint
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
 
 # Set Network Training Parameters
-HIDDEN_LAYER_SIZES = [100, 50, 10]
+HIDDEN_LAYER_SIZES = [500, 100, 100]
 ACTIVATION_FUNCTION = tf.sigmoid
 OPTIMIZER = tf.train.GradientDescentOptimizer(0.1)
 NUM_EPOCHS = 10000
@@ -12,25 +14,30 @@ NUM_EPOCHS = 10000
 random.seed(0)
 tf.set_random_seed(0)
 
-# Training Data
-x = []
-y = []
+# Load Training Data
+# post, label
+training_data = pd.read_csv('raw_training_data.csv', header=0)
 
-# Generate Random Training Dataa
-for i in range(10):
-    vec = []
-    for j in range(10):
-        vec.append(random.choice((0.,1.)))
-    x.append(vec)
+vectorizer = CountVectorizer(analyzer="word", tokenizer=None, preprocessor=None, stop_words=None, max_features=5000)
 
-for i in range(10):
-    vec = []
-    for j in range(1):
-        vec.append(random.choice((0.,1.)))
-    y.append(vec)
+# Load posts and labels as lists
+post_list = training_data['post'].tolist()
+label_list = training_data['label'].tolist()
 
-pprint(x)
-pprint(y)
+# Remove any broken data points
+for i, post in reversed(list(enumerate(post_list))):
+    if not type(post)==str:
+        del post_list[i]
+        del label_list[i]
+
+# Vectorize posts
+vectorized_training_data = vectorizer.fit_transform(post_list)
+vocab = vectorizer.get_feature_names()
+
+x = [datum.toarray()[0] for datum in vectorized_training_data[:-1000]]
+test_x = [datum.toarray()[0] for datum in vectorized_training_data[-1000:]]
+y = [[datum] for datum in label_list[:-1000]]
+test_y = [[datum] for datum in label_list[-1000:]]
 
 # Network Layers
 num_features = len(x[0])
@@ -80,14 +87,21 @@ cost = tf.reduce_mean((output - y_)**2)
 # Define Train
 train = OPTIMIZER.minimize(cost)
 
+# Define Evaluation
+prediction = tf.round(output)
+correct_predictions = tf.equal(prediction, y_)
+accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
+
 # Train
 sess = tf.Session()
 
 sess.run(tf.global_variables_initializer())
 
 for i in range(NUM_EPOCHS):
-    if i % int(NUM_EPOCHS/10) == 0:
-        print(sess.run(cost, feed_dict={x_: x, y_: y}))
+    if i % int(NUM_EPOCHS/100) == 0:
+        print('Cost: ', sess.run(cost, feed_dict={x_: x, y_: y}))
+        print('Training Accuracy: ', sess.run(accuracy, feed_dict={x_: x, y_: y}))
+        print('Testing Accuracy: ', sess.run(accuracy, feed_dict={x_: test_x, y_: test_y}))
     sess.run(train, feed_dict={x_: x, y_: y})
 
 pprint(sess.run(tf.round((output-y_)*100)/100, feed_dict={x_: x, y_: y}))
