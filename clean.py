@@ -49,7 +49,7 @@ def get_price_change(timestamp):
 
 # Clean and Label Posts
 
-training_data_csv = open('training_data.csv', 'w+')
+training_data_csv = open('raw_training_data.csv', 'w+')
 training_data_csv.write('post,label\n')
 
 done = 0
