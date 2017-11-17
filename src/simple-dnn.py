@@ -3,12 +3,14 @@ import random
 from pprint import pprint
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
+import math
 
 # Set Network Training Parameters
-HIDDEN_LAYER_SIZES = [500, 100, 100]
+HIDDEN_LAYER_SIZES = [500, 250, 100]
 ACTIVATION_FUNCTION = tf.sigmoid
 OPTIMIZER = tf.train.GradientDescentOptimizer(0.1)
 NUM_EPOCHS = 10000
+CHUNK_SIZE = 500
 
 # Set Random Seeds
 random.seed(0)
@@ -97,11 +99,25 @@ sess = tf.Session()
 
 sess.run(tf.global_variables_initializer())
 
+x_chunks = []
+y_chunks = []
+num_chunks = math.ceil(len(x)/CHUNK_SIZE)
+
+for i in range(num_chunks):
+    x_chunks.append(x[i * CHUNK_SIZE:(i+1) * CHUNK_SIZE])
+    y_chunks.append(y[i * CHUNK_SIZE:(i+1) * CHUNK_SIZE])
+
+print([len(x) for x in x_chunks])
+print('total: ', len(x))
+
 for i in range(NUM_EPOCHS):
     if i % int(NUM_EPOCHS/100) == 0:
         print('Cost: ', sess.run(cost, feed_dict={x_: x, y_: y}))
         print('Training Accuracy: ', sess.run(accuracy, feed_dict={x_: x, y_: y}))
         print('Testing Accuracy: ', sess.run(accuracy, feed_dict={x_: test_x, y_: test_y}))
-    sess.run(train, feed_dict={x_: x, y_: y})
+    
+    x_chunk = x_chunks[i % num_chunks]
+    y_chunk = y_chunks[i % num_chunks]
+    sess.run(train, feed_dict={x_: x_chunk, y_: y_chunk})
 
 pprint(sess.run(tf.round((output-y_)*100)/100, feed_dict={x_: x, y_: y}))
