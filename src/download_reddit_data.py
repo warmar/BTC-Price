@@ -34,7 +34,6 @@ for post_file_name in post_file_names:
 # Download remaining posts
 for submission in btc.submissions(START_TIMESTAMP, min(earliest_timestamp, END_TIMESTAMP)):
     if submission.is_self:
-        # id,timestamp,score,numcomments,title,text
         submission_json = {
             'id': submission.id,
             'timestamp': submission.created_utc,
@@ -44,6 +43,7 @@ for submission in btc.submissions(START_TIMESTAMP, min(earliest_timestamp, END_T
             'selftext': submission.selftext
         }
 
+        # Write submission json objects to separate files in post_data/
         with open('post_data/%s' % submission.id, 'w+') as post_data_file:
             post_data_file.write(json.dumps(submission_json))
 
