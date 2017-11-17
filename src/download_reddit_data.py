@@ -22,9 +22,9 @@ btc = reddit.subreddit(SUBREDIT_NAME)
 done = 0
 
 earliest_timestamp = time.time()
-post_file_names = os.listdir('post_data')
+post_file_names = os.listdir('raw_post_data')
 for post_file_name in post_file_names:
-    with open('post_data/%s' % post_file_name, 'r') as post_file:
+    with open('raw_post_data/%s' % post_file_name, 'r') as post_file:
         post = json.loads(post_file.read())
     
     earliest_timestamp = min(earliest_timestamp, post['timestamp'])
@@ -43,8 +43,8 @@ for submission in btc.submissions(START_TIMESTAMP, min(earliest_timestamp, END_T
             'selftext': submission.selftext
         }
 
-        # Write submission json objects to separate files in post_data/
-        with open('post_data/%s' % submission.id, 'w+') as post_data_file:
+        # Write submission json objects to separate files in raw_post_data/
+        with open('raw_post_data/%s' % submission.id, 'w+') as post_data_file:
             post_data_file.write(json.dumps(submission_json))
 
     done += 1
