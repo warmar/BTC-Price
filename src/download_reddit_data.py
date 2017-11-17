@@ -19,6 +19,8 @@ reddit = praw.Reddit(client_id=REDDIT_CLIENT_ID, client_secret=REDDIT_CLIENT_SEC
 btc = reddit.subreddit(SUBREDIT_NAME)
 
 # Determine earliest already-downloaded post timestamp (posts download from most recent to oldest)
+done = 0
+
 earliest_timestamp = time.time()
 post_file_names = os.listdir('post_data')
 for post_file_name in post_file_names:
@@ -27,8 +29,9 @@ for post_file_name in post_file_names:
     
     earliest_timestamp = min(earliest_timestamp, post['timestamp'])
 
+    done += 1
+
 # Download remaining posts
-done = 0
 for submission in btc.submissions(START_TIMESTAMP, min(earliest_timestamp, END_TIMESTAMP)):
     if submission.is_self:
         # id,timestamp,score,numcomments,title,text
