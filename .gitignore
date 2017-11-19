@@ -1,6 +1,6 @@
 .vscode/
 src/raw_post_data/
 btceUSD-no-duplicates.csv
-src/processed_data/
+src/processed_data-*/
 raw_price_data/
 Jeff & Zac/
