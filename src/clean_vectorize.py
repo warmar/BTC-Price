@@ -99,11 +99,11 @@ for vector in vectorized_training_data:
     vector_list = vector.toarray()[0].tolist()
     vectorized_training_data_list.append(vector_list)
 
-with open('cleaned_posts', 'w+') as k:
+with open('processed_data/cleaned_posts', 'w+') as k:
     k.write(json.dumps(cleaned_posts, indent=4))
-with open('vectorized_posts', 'w+') as k:
+with open('processed_data/vectorized_posts', 'w+') as k:
     k.write(json.dumps(vectorized_training_data_list))
-with open('labels', 'w+') as k:
+with open('processed_data/labels', 'w+') as k:
     k.write(json.dumps(labels))
-with open('vocab', 'w+') as k:
+with open('processed_data/vocab', 'w+') as k:
     k.write(json.dumps(vocab, indent=4))
