@@ -1,9 +1,8 @@
-import tensorflow as tf
-import random
 from pprint import pprint
-import pandas as pd
-from sklearn.feature_extraction.text import CountVectorizer
+import random
 import math
+import json
+import tensorflow as tf
 
 # Set Network Training Parameters
 HIDDEN_LAYER_SIZES = [500, 250, 100]
@@ -17,29 +16,20 @@ random.seed(0)
 tf.set_random_seed(0)
 
 # Load Training Data
-# post, label
-training_data = pd.read_csv('raw_training_data.csv', header=0)
+vectorized_posts = json.load(open('processed_data/vectorized_posts'))
+labels = json.load(open('processed_data/labels'))
 
-vectorizer = CountVectorizer(analyzer="word", tokenizer=None, preprocessor=None, stop_words=None, max_features=5000)
+# Shuffle Data
+combined_data = list(zip(vectorized_posts, labels))
+random.shuffle(combined_data)
+shuffled_vectorized_posts = [datum[0] for datum in combined_data]
+shuffled_labels = [[datum[1]] for datum in combined_data]
 
-# Load posts and labels as lists
-post_list = training_data['post'].tolist()
-label_list = training_data['label'].tolist()
-
-# Remove any broken data points
-for i, post in reversed(list(enumerate(post_list))):
-    if not type(post)==str:
-        del post_list[i]
-        del label_list[i]
-
-# Vectorize posts
-vectorized_training_data = vectorizer.fit_transform(post_list)
-vocab = vectorizer.get_feature_names()
-
-x = [datum.toarray()[0] for datum in vectorized_training_data[:-1000]]
-test_x = [datum.toarray()[0] for datum in vectorized_training_data[-1000:]]
-y = [[datum] for datum in label_list[:-1000]]
-test_y = [[datum] for datum in label_list[-1000:]]
+# Split data into training and testing groups
+x = shuffled_vectorized_posts[:-1000]
+test_x = shuffled_vectorized_posts[-1000:]
+y = shuffled_labels[:-1000]
+test_y = shuffled_labels[-1000:]
 
 # Network Layers
 num_features = len(x[0])
@@ -99,6 +89,7 @@ sess = tf.Session()
 
 sess.run(tf.global_variables_initializer())
 
+# Split data into chunks for stochastic descent
 x_chunks = []
 y_chunks = []
 num_chunks = math.ceil(len(x)/CHUNK_SIZE)
@@ -107,9 +98,7 @@ for i in range(num_chunks):
     x_chunks.append(x[i * CHUNK_SIZE:(i+1) * CHUNK_SIZE])
     y_chunks.append(y[i * CHUNK_SIZE:(i+1) * CHUNK_SIZE])
 
-print([len(x) for x in x_chunks])
-print('total: ', len(x))
-
+# Train Networks
 for i in range(NUM_EPOCHS):
     if i % int(NUM_EPOCHS/100) == 0:
         print('Cost: ', sess.run(cost, feed_dict={x_: x, y_: y}))
