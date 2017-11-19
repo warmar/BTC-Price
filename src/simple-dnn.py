@@ -2,6 +2,8 @@ from pprint import pprint
 import random
 import math
 import json
+import sys
+import os
 import tensorflow as tf
 
 # Set Network Training Parameters
@@ -11,13 +13,24 @@ OPTIMIZER = tf.train.GradientDescentOptimizer(0.1)
 NUM_EPOCHS = 10000
 CHUNK_SIZE = 500
 
+# Choose Dataset
+PERIOD = 86400
+OFFSET = -86400
+MINIMUM_SCORE = 100
+
 # Set Random Seeds
 random.seed(0)
 tf.set_random_seed(0)
 
 # Load Training Data
-vectorized_posts = json.load(open('processed_data/vectorized_posts'))
-labels = json.load(open('processed_data/labels'))
+description = 'minscore=%s,period=%s,offset=%s' % (MINIMUM_SCORE, PERIOD, OFFSET)
+
+if not os.path.exists('processed_data-%s' % description):
+    print('Dataset does not exist: %s' % description)
+    sys.exit(1)
+
+vectorized_posts = json.load(open('processed_data-%s/vectorized_posts' % description))
+labels = json.load(open('processed_data-%s/labels' % description))
 
 # Shuffle Data
 combined_data = list(zip(vectorized_posts, labels))
