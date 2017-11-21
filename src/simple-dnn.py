@@ -53,20 +53,24 @@ layer_sizes = [num_features, *HIDDEN_LAYER_SIZES, num_labels]
 # Generate Netork Weights
 weights = []
 for i, size in enumerate(layer_sizes[1:]):
-    weights.append(
-        tf.Variable(
-            tf.random_normal((layer_sizes[i], layer_sizes[i+1]))
+    with tf.name_scope('weights'):
+        weights.append( 
+            tf.Variable(
+                tf.random_normal((layer_sizes[i], layer_sizes[i+1])), name='weights_%s' % i
+            )
         )
-    )
+        tf.summary.histogram('weights_%s' % i, weights[-1])
 
 # Generate Network Biases
 biases = []
-for weight in weights:
-    biases.append(
-        tf.Variable(
-            tf.zeros((weight.shape[1]))
+for i, weight in enumerate(weights):
+    with tf.name_scope('biases'):
+        biases.append(
+            tf.Variable(
+                tf.zeros((weight.shape[1])), name='biases_%s' % i
+            )
         )
-    )
+        tf.summary.histogram('biases_%s' % i, biases[-1])
 
 # Create Network Graph
 layers = []
@@ -75,11 +79,12 @@ y_ = tf.placeholder(tf.float32, (None, num_labels), name='y_placeholder')
 layers.append(x_)
 
 for i in range(len(weights)):
-    layers.append(
-        ACTIVATION_FUNCTION(
-            tf.matmul(layers[i], weights[i]) + biases[i]
+    with tf.name_scope('layer_%s' % i):
+        layers.append(
+            ACTIVATION_FUNCTION(
+                tf.matmul(layers[i], weights[i]) + biases[i]
+            )
         )
-    )
 
 
 output = layers[-1]
@@ -88,6 +93,7 @@ pprint(layers)
 
 # Create Cost Function
 cost = tf.reduce_mean((output - y_)**2)
+tf.summary.scalar('cost', cost)
 
 # Define Train
 train = OPTIMIZER.minimize(cost)
@@ -96,6 +102,8 @@ train = OPTIMIZER.minimize(cost)
 prediction = tf.round(output)
 correct_predictions = tf.equal(prediction, y_)
 accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
+
+tf.summary.scalar('accuracy', accuracy)
 
 # Train
 sess = tf.Session()
@@ -111,13 +119,28 @@ for i in range(num_chunks):
     x_chunks.append(x[i * CHUNK_SIZE:(i+1) * CHUNK_SIZE])
     y_chunks.append(y[i * CHUNK_SIZE:(i+1) * CHUNK_SIZE])
 
+# Define summary variables
+merged_summary = tf.summary.merge_all()
+train_summary_writer = tf.summary.FileWriter('tensorboard/%s/train/' % description, sess.graph)
+test_summary_writer = tf.summary.FileWriter('tensorboard/%s/test/' % description, sess.graph)
+
 # Train Networks
 for i in range(NUM_EPOCHS):
+    # Evaluate Cost and Accuracy
     if i % int(NUM_EPOCHS/100) == 0:
         print('Cost: ', sess.run(cost, feed_dict={x_: x, y_: y}))
         print('Training Accuracy: ', sess.run(accuracy, feed_dict={x_: x, y_: y}))
         print('Testing Accuracy: ', sess.run(accuracy, feed_dict={x_: test_x, y_: test_y}))
     
+    # Write Summaries
+    if i % 10 == 0:
+        train_summary = sess.run(merged_summary, feed_dict={x_: x, y_: y})
+        train_summary_writer.add_summary(train_summary, i)
+
+        test_summary = sess.run(merged_summary, feed_dict={x_: test_x, y_: test_y})
+        test_summary_writer.add_summary(test_summary, i)
+
+    # Perform stochastic gradient descent
     x_chunk = x_chunks[i % num_chunks]
     y_chunk = y_chunks[i % num_chunks]
     sess.run(train, feed_dict={x_: x_chunk, y_: y_chunk})
