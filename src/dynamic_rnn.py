@@ -8,8 +8,11 @@ variable length.
 Links:
     [Long Short Term Memory](http://deeplearning.cs.cmu.edu/pdfs/Hochreiter97_lstm.pdf)
 
-Author: Aymeric Damien
+Original Author: Aymeric Damien
 Project: https://github.com/aymericdamien/TensorFlow-Examples/
+
+Adapted by Jeff, Peter, and Zac
+Done with Reddit and BTC price data.
 """
 
 from __future__ import print_function
@@ -22,13 +25,22 @@ import pandas as pd
 import json
 
 # ====================
-#  TOY DATA GENERATOR
+#  DATA GENERATOR
 # ====================
-class ToySequenceData(object):
+class SequenceGenerator(object):
     """ Generate sequence of data with dynamic length.
     This class generate samples for training:
-    - Class 0: linear sequences (i.e. [0, 1, 2, 3,...])
-    - Class 1: random sequences (i.e. [1, 3, 10, 7,...])
+    - Class 0: Price goes down
+    - Class 1: Price goes up
+
+    Some general notes about data:
+        - Dictionary is built with 10,000 most common words. (Not all words)
+        - For training data, we take first n_samples posts.
+        - For testing, we take last n_samples data.
+        - We take the maximum post length among the n_samples for max_seq_len
+            - BUT, if more time, we should've done statistical analysis
+              on mean and median reddit post lengths. (We have suspicions that
+              the reddit post lengths are right skewed.)
 
     NOTICE:
     We have to pad each sequence to reach 'max_seq_len' for TensorFlow
@@ -36,6 +48,8 @@ class ToySequenceData(object):
     dimensions). The dynamic calculation will then be perform thanks to
     'seqlen' attribute that records every actual sequence length.
     """
+
+    # This function returns a cleaned list of words from a string.
     def build_wordlist(self, post):
         post = post.strip()
         post = post.split(' ')
@@ -56,20 +70,26 @@ class ToySequenceData(object):
         self.max_seq_len = 0
         for index, row in training_data.iterrows():
             post = self.build_wordlist(str(row["post"]))
+            # Building the vector using the dictionary
             vector = []
             for word in post:
                 if word in dictionary:
                     vector.append([dictionary[word]])
+            # A list to keep track of all the lenghts of the posts
             self.seqlen.append(len(vector))
+            # Finding the max_seq_len
             if len(vector) > self.max_seq_len:
                 self.max_seq_len = len(vector)
+            # Add the vector
             self.data.append(vector)
+            # Adding the label
             if int(row['label']) == 0:
                 self.labels.append([0., 1.])
             else:
                 self.labels.append([1., 0.])
         self.batch_id = 0
 
+    # PADDING FUNCTION!!!
     def pad(self, max_seq_len_):
         for index, datum in enumerate(self.data):
             while len(datum) < max_seq_len_:
@@ -99,14 +119,15 @@ learning_rate = 0.01
 training_steps = 10000
 batch_size = 128
 display_step = 200
-seq_max_len = 0
+seq_max_len = 0 # Global max langth
 
 # Network Parameters
 n_hidden = 64 # hidden layer num of features
 n_classes = 2 # linear sequence or not
 
-trainset = ToySequenceData(n_samples=5000)
-testset = ToySequenceData(n_samples=5000, testing=True)
+# Data here!
+trainset = SequenceGenerator(n_samples=5000)
+testset = SequenceGenerator(n_samples=5000, testing=True)
 
 # Padding the data
 if trainset.max_seq_len > testset.max_seq_len:
@@ -138,7 +159,7 @@ def dynamicRNN(x, seqlen, weights, biases):
     # Prepare data shape to match `rnn` function requirements
     # Current data input shape: (batch_size, n_steps, n_input)
     # Required shape: 'n_steps' tensors list of shape (batch_size, n_input)
-    
+
     # Unstack to get a list of 'n_steps' tensors of shape (batch_size, n_input)
     x = tf.unstack(x, seq_max_len, 1)
 
@@ -212,4 +233,3 @@ with tf.Session() as sess:
                                               seqlen: test_seqlen}))
 
     print("Optimization Finished!")
-
