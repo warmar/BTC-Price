@@ -8,9 +8,10 @@ from nltk.corpus import stopwords
 import pandas as pd
 
 # Define correlation and post parameters
-PERIOD = 86400
-OFFSET = 0
+PERIOD = 604800
+OFFSET = -604800
 MINIMUM_SCORE = 100
+MAX_FEATURES = 25000
 
 # Read bitcoin price data
 print('Reading bitcoin price data...')
@@ -87,7 +88,7 @@ print()
 # Vectorize Post Data
 print('Vectorizing post data...')
 
-vectorizer = CountVectorizer(analyzer="word", tokenizer=None, preprocessor=None, stop_words=None, max_features=5000)
+vectorizer = CountVectorizer(analyzer="word", tokenizer=None, preprocessor=None, stop_words=None, max_features=MAX_FEATURES)
 vectorized_training_data = vectorizer.fit_transform(cleaned_posts)
 vocab = vectorizer.get_feature_names()
 
@@ -99,7 +100,7 @@ for vector in vectorized_training_data:
     vector_list = vector.toarray()[0].tolist()
     vectorized_training_data_list.append(vector_list)
 
-description = 'minscore=%s,period=%s,offset=%s' % (MINIMUM_SCORE, PERIOD, OFFSET)
+description = 'minscore=%s,maxfeatures=%s,period=%s,offset=%s' % (MINIMUM_SCORE, MAX_FEATURES, PERIOD, OFFSET)
 
 if not os.path.exists('processed_data-%s' % description):
     os.mkdir('processed_data-%s' % description)

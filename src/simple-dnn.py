@@ -14,16 +14,17 @@ NUM_EPOCHS = 10000
 CHUNK_SIZE = 500
 
 # Choose Dataset
-PERIOD = 86400
-OFFSET = -86400
+PERIOD = 604800
+OFFSET = -604800
 MINIMUM_SCORE = 100
+MAX_FEATURES = 25000
 
 # Set Random Seeds
 random.seed(0)
 tf.set_random_seed(0)
 
 # Load Training Data
-description = 'minscore=%s,period=%s,offset=%s' % (MINIMUM_SCORE, PERIOD, OFFSET)
+description = 'minscore=%s,maxfeatures=%s,period=%s,offset=%s' % (MINIMUM_SCORE, MAX_FEATURES, PERIOD, OFFSET)
 
 if not os.path.exists('processed_data-%s' % description):
     print('Dataset does not exist: %s' % description)
